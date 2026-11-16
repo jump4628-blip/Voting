@@ -60,11 +60,27 @@
         </div>
         <div class="toggle-row">
           <div>
+            <b>중복/복수 투표 허용</b>
+            <div class="muted">켜면 투표자가 여러 항목을 동시에 다중 선택할 수 있습니다. 끄면 1인 1표만 가능합니다.</div>
+          </div>
+          <label class="switch"><input id="multipleToggle" type="checkbox" /><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
             <b>투표 진행</b>
             <div class="muted" id="statusText">투표가 진행 중입니다. 투표자는 종료 전까지 선택을 수정할 수 있습니다.</div>
           </div>
           <label class="switch"><input id="statusToggle" type="checkbox" /><span class="slider"></span></label>
         </div>
+      </div>
+
+      <!-- 비밀번호 변경 -->
+      <div class="card">
+        <h2>🔑 관리자 비밀번호 변경</h2>
+        <form id="pwChangeForm" class="inline">
+          <input id="newPwInput" type="password" placeholder="새 비밀번호 입력 (4글자 이상)" required />
+          <button type="submit">비밀번호 변경</button>
+        </form>
       </div>
 
       <!-- 항목 -->

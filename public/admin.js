@@ -87,6 +87,7 @@
     if (!state) return;
     if (document.activeElement !== $('titleInput') && !$('titleInput').dataset.dirty) $('titleInput').value = state.title;
     $('realtimeToggle').checked = state.realtime;
+    $('multipleToggle').checked = !!state.allowMultiple;
     const open = state.status === 'open';
     $('statusToggle').checked = open;
     $('statusText').textContent = open
@@ -195,6 +196,25 @@
   $('realtimeToggle').addEventListener('change', async (e) => {
     await api('realtime', { enabled: e.target.checked });
     toast(e.target.checked ? '실시간 결과 공개 ON' : '실시간 결과 공개 OFF');
+  });
+
+  $('multipleToggle').addEventListener('change', async (e) => {
+    await api('allow_multiple', { enabled: e.target.checked });
+    toast(e.target.checked ? '중복/복수 투표 허용 ON' : '중복/복수 투표 허용 OFF');
+  });
+
+  $('pwChangeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = $('newPwInput').value.trim();
+    if (!newPassword || newPassword.length < 4) {
+      return toast('비밀번호는 4글자 이상 입력하세요.');
+    }
+    if (!confirm('관리자 비밀번호를 변경하시겠습니까?')) return;
+    await api('password', { newPassword });
+    password = newPassword;
+    sessionStorage.setItem('voting_admin_pw', newPassword);
+    $('newPwInput').value = '';
+    toast('관리자 비밀번호가 성공적으로 변경되었습니다!');
   });
 
   $('statusToggle').addEventListener('change', async (e) => {

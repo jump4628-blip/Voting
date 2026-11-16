@@ -68,9 +68,11 @@
       $('pieView').classList.add('hidden');
     }
 
+    const selectedIds = Array.isArray(myVote) ? myVote : (myVote ? [myVote] : []);
+
     $('options').innerHTML = s.options
       .map((o, idx) => {
-        const selected = o.id === myVote;
+        const selected = selectedIds.includes(o.id);
         let stat = '';
         let width = 0;
         const color = COLORS[idx % COLORS.length];
@@ -92,9 +94,15 @@
       })
       .join('');
 
-    const mine = s.options.find((o) => o.id === myVote);
-    $('myVoteText').textContent = mine ? `내 선택: ${mine.text}` : closed ? '' : '항목을 눌러 투표하세요';
-    $('cancelBtn').classList.toggle('hidden', !mine || closed);
+    let voteDesc = '';
+    if (selectedIds.length > 0) {
+      const names = s.options.filter((o) => selectedIds.includes(o.id)).map((o) => o.text);
+      voteDesc = `내 선택: ${names.join(', ')}`;
+    } else {
+      voteDesc = closed ? '' : (s.allowMultiple ? '항목을 눌러 다중 선택하세요 (다시 누르면 취소)' : '항목을 눌러 투표하세요');
+    }
+    $('myVoteText').textContent = voteDesc;
+    $('cancelBtn').classList.toggle('hidden', selectedIds.length === 0 || closed);
   }
 
   async function vote(optionId) {
@@ -169,7 +177,7 @@
   $('options').addEventListener('click', (e) => {
     const el = e.target.closest('.option');
     if (!el) return;
-    if (el.dataset.id === myVote) return;
+    if (!current.allowMultiple && el.dataset.id === myVote) return;
     vote(el.dataset.id);
   });
   $('cancelBtn').addEventListener('click', () => vote(null));

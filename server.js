@@ -18,10 +18,12 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 let state = {
   title: '새 투표',
   options: [], // { id, text }
-  votes: {}, // voterId -> optionId
+  votes: {}, // voterId -> optionId (단일) 또는 [optionId, ...] (복수)
   realtime: true, // 실시간 결과 공개 여부
+  allowMultiple: false, // 복수/중복 투표 허용 여부
   status: 'open', // 'open' | 'closed'
   history: [], // [{ id, title, options, results, total, closedAt }]
+  adminPassword: '', // 관리자가 직접 변경한 비밀번호 (있으면 우선 적용)
 };
 
 try {
@@ -47,8 +49,14 @@ function save() {
 function counts() {
   const c = {};
   state.options.forEach((o) => (c[o.id] = 0));
-  Object.values(state.votes).forEach((id) => {
-    if (id in c) c[id]++;
+  Object.values(state.votes).forEach((val) => {
+    if (Array.isArray(val)) {
+      val.forEach((id) => {
+        if (id in c) c[id]++;
+      });
+    } else if (val in c) {
+      c[val]++;
+    }
   });
   return c;
 }
@@ -59,6 +67,7 @@ function publicState(isAdmin) {
     title: state.title,
     options: state.options,
     realtime: state.realtime,
+    allowMultiple: !!state.allowMultiple,
     status: state.status,
     showResults,
     results: showResults ? counts() : null,
@@ -105,8 +114,9 @@ function readBody(req) {
 }
 
 function checkPassword(pw) {
+  const currentPw = state.adminPassword || ADMIN_PASSWORD;
   const a = Buffer.from(String(pw || ''));
-  const b = Buffer.from(ADMIN_PASSWORD);
+  const b = Buffer.from(currentPw);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
@@ -182,16 +192,46 @@ const server = http.createServer(async (req, res) => {
 
   // 투표 / 수정 / 취소
   if (p === '/api/vote' && req.method === 'POST') {
-    const { voterId, optionId } = await readBody(req);
+    const { voterId, optionId, optionIds } = await readBody(req);
     if (!voterId || typeof voterId !== 'string' || voterId.length > 100)
       return send(res, 400, { error: '잘못된 요청입니다.' });
     if (state.status !== 'open') return send(res, 403, { error: '투표가 종료되었습니다.' });
-    if (optionId == null) {
-      delete state.votes[voterId];
+
+    if (state.allowMultiple) {
+      // 복수 투표 모드
+      if (optionIds && Array.isArray(optionIds)) {
+        const valid = optionIds.filter((id) => state.options.some((o) => o.id === id));
+        if (valid.length === 0) {
+          delete state.votes[voterId];
+        } else {
+          state.votes[voterId] = valid;
+        }
+      } else if (optionId == null) {
+        delete state.votes[voterId];
+      } else {
+        if (!state.options.some((o) => o.id === optionId))
+          return send(res, 400, { error: '존재하지 않는 항목입니다.' });
+        let userVotes = Array.isArray(state.votes[voterId]) ? [...state.votes[voterId]] : (state.votes[voterId] ? [state.votes[voterId]] : []);
+        if (userVotes.includes(optionId)) {
+          userVotes = userVotes.filter((id) => id !== optionId);
+        } else {
+          userVotes.push(optionId);
+        }
+        if (userVotes.length === 0) {
+          delete state.votes[voterId];
+        } else {
+          state.votes[voterId] = userVotes;
+        }
+      }
     } else {
-      if (!state.options.some((o) => o.id === optionId))
-        return send(res, 400, { error: '존재하지 않는 항목입니다.' });
-      state.votes[voterId] = optionId;
+      // 단일 투표 모드
+      if (optionId == null) {
+        delete state.votes[voterId];
+      } else {
+        if (!state.options.some((o) => o.id === optionId))
+          return send(res, 400, { error: '존재하지 않는 항목입니다.' });
+        state.votes[voterId] = optionId;
+      }
     }
     save();
     broadcast();
@@ -242,6 +282,17 @@ const server = http.createServer(async (req, res) => {
       case 'realtime':
         state.realtime = !!body.enabled;
         break;
+      case 'allow_multiple':
+        state.allowMultiple = !!body.enabled;
+        break;
+      case 'password': {
+        const newPw = String(body.newPassword || '').trim();
+        if (!newPw || newPw.length < 4) {
+          return send(res, 400, { error: '비밀번호는 4글자 이상이어야 합니다.' });
+        }
+        state.adminPassword = newPw;
+        break;
+      }
       case 'status': {
         const nextStatus = body.status === 'closed' ? 'closed' : 'open';
         if (state.status === 'open' && nextStatus === 'closed') {
