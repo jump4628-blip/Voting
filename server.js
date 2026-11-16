@@ -286,9 +286,13 @@ const server = http.createServer(async (req, res) => {
         state.allowMultiple = !!body.enabled;
         break;
       case 'password': {
+        const currentPw = String(body.currentPassword || '').trim();
         const newPw = String(body.newPassword || '').trim();
+        if (!checkPassword(currentPw)) {
+          return send(res, 400, { error: '현재 비밀번호가 올바르지 않습니다.' });
+        }
         if (!newPw || newPw.length < 4) {
-          return send(res, 400, { error: '비밀번호는 4글자 이상이어야 합니다.' });
+          return send(res, 400, { error: '새 비밀번호는 4글자 이상이어야 합니다.' });
         }
         state.adminPassword = newPw;
         break;

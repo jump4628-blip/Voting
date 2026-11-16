@@ -77,7 +77,8 @@
       <!-- 비밀번호 변경 -->
       <div class="card">
         <h2>🔑 관리자 비밀번호 변경</h2>
-        <form id="pwChangeForm" class="inline">
+        <form id="pwChangeForm" style="display: flex; flex-direction: column; gap: 8px;">
+          <input id="currentPwInput" type="password" placeholder="현재 비밀번호 입력" required />
           <input id="newPwInput" type="password" placeholder="새 비밀번호 입력 (4글자 이상)" required />
           <button type="submit">비밀번호 변경</button>
         </form>

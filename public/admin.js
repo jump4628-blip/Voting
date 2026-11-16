@@ -205,16 +205,23 @@
 
   $('pwChangeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const currentPassword = $('currentPwInput').value.trim();
     const newPassword = $('newPwInput').value.trim();
+    if (!currentPassword) {
+      return toast('현재 비밀번호를 입력하세요.');
+    }
     if (!newPassword || newPassword.length < 4) {
-      return toast('비밀번호는 4글자 이상 입력하세요.');
+      return toast('새 비밀번호는 4글자 이상 입력하세요.');
     }
     if (!confirm('관리자 비밀번호를 변경하시겠습니까?')) return;
-    await api('password', { newPassword });
-    password = newPassword;
-    sessionStorage.setItem('voting_admin_pw', newPassword);
-    $('newPwInput').value = '';
-    toast('관리자 비밀번호가 성공적으로 변경되었습니다!');
+    try {
+      await api('password', { currentPassword, newPassword });
+      password = newPassword;
+      sessionStorage.setItem('voting_admin_pw', newPassword);
+      $('currentPwInput').value = '';
+      $('newPwInput').value = '';
+      toast('관리자 비밀번호가 성공적으로 변경되었습니다!');
+    } catch {}
   });
 
   $('statusToggle').addEventListener('change', async (e) => {
