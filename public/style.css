@@ -30,6 +30,10 @@ header {
 header img { width: 32px; height: 32px; }
 header .spacer { flex: 1; }
 header a { color: #e0e7ff; font-size: .85rem; font-weight: 500; text-decoration: none; }
+header a.admin-link {
+  font-size: .72rem; opacity: .7; padding: 4px 8px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+}
+header a.admin-link:hover { opacity: 1; }
 main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
 .card {
   background: var(--card);
