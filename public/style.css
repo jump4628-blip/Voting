@@ -166,6 +166,115 @@ select {
 .hidden { display: none !important; }
 .center { text-align: center; }
 
+/* 차트 스타일 */
+.chart-toggle-group {
+  display: flex;
+  gap: 6px;
+  background: #eef2ff;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  width: fit-content;
+}
+.chart-btn {
+  background: transparent;
+  color: var(--primary);
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.chart-btn.active {
+  background: #fff;
+  color: var(--primary-dark);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.pie-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+@media (min-width: 520px) {
+  .pie-container {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+.pie-chart {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  flex-shrink: 0;
+}
+.pie-chart::after {
+  content: '';
+  position: absolute;
+  inset: 38px;
+  background: #fff;
+  border-radius: 50%;
+}
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 280px;
+  font-size: .9rem;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.legend-text {
+  flex: 1;
+  word-break: break-all;
+}
+.legend-pct {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* 히스토리 카드 */
+.history-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+.history-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.history-meta {
+  font-size: .8rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: .9rem;
+  border-bottom: 1px dashed var(--border);
+}
+.history-row:last-child {
+  border-bottom: none;
+}
+
 /* 대형 화면용 QR (발표 화면) */
 #qrFull {
   position: fixed; inset: 0; background: #fff; z-index: 200;

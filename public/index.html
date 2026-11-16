@@ -29,6 +29,23 @@
 
     <div class="card">
       <div id="notice" class="notice hidden"></div>
+
+      <!-- 차트 보기 전환 (실시간 결과 공개 시 노출) -->
+      <div id="chartToggleWrap" class="hidden">
+        <div class="chart-toggle-group">
+          <button type="button" class="chart-btn active" id="btnBarView">📊 막대 그래프</button>
+          <button type="button" class="chart-btn" id="btnPieView">🍩 원형 그래프</button>
+        </div>
+      </div>
+
+      <!-- 원형 그래프 뷰 -->
+      <div id="pieView" class="hidden">
+        <div class="pie-container">
+          <div id="pieChart" class="pie-chart"></div>
+          <div id="pieLegend" class="pie-legend"></div>
+        </div>
+      </div>
+
       <div id="options"></div>
       <p id="empty" class="muted center hidden">아직 투표 항목이 없습니다. 관리자가 항목을 추가하면 자동으로 표시됩니다.</p>
       <div class="btn-row" style="justify-content: space-between; margin-top: 8px;">

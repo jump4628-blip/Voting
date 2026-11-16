@@ -109,6 +109,34 @@
         </div>`;
       })
       .join('');
+
+    // 히스토리 렌더링
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = state.history || [];
+    $('noHistory').classList.toggle('hidden', list.length > 0);
+    $('historyList').innerHTML = list
+      .map((h) => {
+        const dateStr = h.closedAt ? new Date(h.closedAt).toLocaleString('ko-KR') : '';
+        const rows = (h.options || [])
+          .map((opt) => {
+            const count = (h.results && h.results[opt.id]) || 0;
+            const pct = h.total ? Math.round((count / h.total) * 100) : 0;
+            return `<div class="history-row">
+              <span>${esc(opt.text)}</span>
+              <b>${count}표 (${pct}%)</b>
+            </div>`;
+          })
+          .join('');
+        return `<div class="history-item">
+          <div class="history-title">📌 ${esc(h.title)}</div>
+          <div class="history-meta">종료 일시: ${dateStr} · 총 참여자: ${h.total || 0}명</div>
+          <div>${rows || '<span class="muted">항목 없음</span>'}</div>
+        </div>`;
+      })
+      .join('');
   }
 
   // ---------- 이벤트 ----------
@@ -124,6 +152,16 @@
     await api('title', { title: $('titleInput').value });
     delete $('titleInput').dataset.dirty;
     toast('제목을 변경했습니다.');
+  });
+
+  $('newVoteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = $('newVoteTitle').value.trim();
+    if (!title) return;
+    if (!confirm(`'${title}' 제목으로 새 투표를 시작할까요?\n(현재 진행 중인 투표 결과는 '지난 투표 기록'에 안전하게 보관됩니다)`)) return;
+    await api('new_vote', { title });
+    $('newVoteTitle').value = '';
+    toast('새 투표를 시작했습니다!');
   });
 
   $('addForm').addEventListener('submit', async (e) => {

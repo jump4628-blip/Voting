@@ -21,11 +21,14 @@ let state = {
   votes: {}, // voterId -> optionId
   realtime: true, // 실시간 결과 공개 여부
   status: 'open', // 'open' | 'closed'
+  history: [], // [{ id, title, options, results, total, closedAt }]
 };
 
 try {
   if (fs.existsSync(DATA_FILE)) {
-    state = { ...state, ...JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')) };
+    const loaded = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    state = { ...state, ...loaded };
+    if (!state.history) state.history = [];
   }
 } catch (e) {
   console.error('data.json 로드 실패, 기본값 사용:', e.message);
@@ -61,6 +64,7 @@ function publicState(isAdmin) {
     results: showResults ? counts() : null,
     total: showResults ? Object.keys(state.votes).length : null,
     participants: isAdmin ? Object.keys(state.votes).length : undefined,
+    history: isAdmin ? (state.history || []) : undefined,
   };
 }
 
@@ -238,9 +242,42 @@ const server = http.createServer(async (req, res) => {
       case 'realtime':
         state.realtime = !!body.enabled;
         break;
-      case 'status':
-        state.status = body.status === 'closed' ? 'closed' : 'open';
+      case 'status': {
+        const nextStatus = body.status === 'closed' ? 'closed' : 'open';
+        if (state.status === 'open' && nextStatus === 'closed') {
+          // 종료 시 기록(history)에 자동 보관
+          if (!state.history) state.history = [];
+          state.history.unshift({
+            id: crypto.randomUUID(),
+            title: state.title,
+            options: JSON.parse(JSON.stringify(state.options)),
+            results: counts(),
+            total: Object.keys(state.votes).length,
+            closedAt: new Date().toISOString(),
+          });
+        }
+        state.status = nextStatus;
         break;
+      }
+      case 'new_vote': {
+        // 이전 투표가 아직 history에 안 들어갔고 투표 기록이 있으면 보관
+        if (Object.keys(state.votes).length > 0) {
+          if (!state.history) state.history = [];
+          state.history.unshift({
+            id: crypto.randomUUID(),
+            title: state.title,
+            options: JSON.parse(JSON.stringify(state.options)),
+            results: counts(),
+            total: Object.keys(state.votes).length,
+            closedAt: new Date().toISOString(),
+          });
+        }
+        state.title = String(body.title || '새 투표').trim().slice(0, 100) || '새 투표';
+        state.options = [];
+        state.votes = {};
+        state.status = 'open';
+        break;
+      }
       case 'reset':
         state.votes = {};
         break;
