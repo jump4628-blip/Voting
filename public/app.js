@@ -165,6 +165,8 @@
     $('btnBarView').classList.remove('active');
     render();
   });
+
+  $('options').addEventListener('click', (e) => {
     const el = e.target.closest('.option');
     if (!el) return;
     if (el.dataset.id === myVote) return;
