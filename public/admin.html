@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 - Voting</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+  <header>
+    <img src="/favicon.svg" alt="" />
+    <span>Voting 관리자</span>
+    <span class="spacer"></span>
+    <a href="/" target="_blank">투표 페이지 열기 ↗</a>
+  </header>
+
+  <main>
+    <!-- 로그인 -->
+    <div id="loginCard" class="card">
+      <h2>🔐 관리자 로그인</h2>
+      <form id="loginForm" class="inline">
+        <input id="pw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" />
+        <button type="submit">로그인</button>
+      </form>
+      <p id="loginErr" class="muted" style="color: var(--red);"></p>
+    </div>
+
+    <div id="panel" class="hidden">
+      <!-- 제목 -->
+      <div class="card">
+        <h2>📝 투표 제목</h2>
+        <form id="titleForm" class="inline">
+          <input id="titleInput" type="text" maxlength="100" placeholder="투표 제목" />
+          <button type="submit">변경</button>
+        </form>
+      </div>
+
+      <!-- 설정 -->
+      <div class="card">
+        <h2>⚙️ 투표 설정</h2>
+        <div class="toggle-row">
+          <div>
+            <b>실시간 결과 공개</b>
+            <div class="muted">켜면 투표자들이 결과 변화를 실시간으로 봅니다. 끄면 종료 후 공개됩니다.</div>
+          </div>
+          <label class="switch"><input id="realtimeToggle" type="checkbox" /><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <b>투표 진행</b>
+            <div class="muted" id="statusText">투표가 진행 중입니다. 투표자는 종료 전까지 선택을 수정할 수 있습니다.</div>
+          </div>
+          <label class="switch"><input id="statusToggle" type="checkbox" /><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <!-- 항목 -->
+      <div class="card">
+        <h2>📋 투표 항목 <span id="participants" class="muted" style="font-weight: 500;"></span></h2>
+        <form id="addForm" class="inline" style="margin-bottom: 12px;">
+          <input id="optionInput" type="text" maxlength="100" placeholder="새 항목 이름" />
+          <button type="submit">+ 추가</button>
+        </form>
+        <div id="adminOptions"></div>
+        <p id="noOptions" class="muted center hidden">항목을 추가해 주세요.</p>
+        <div class="btn-row" style="margin-top: 12px; justify-content: flex-end;">
+          <button id="resetBtn" class="danger small">모든 투표 초기화</button>
+        </div>
+      </div>
+
+      <!-- QR -->
+      <div class="card">
+        <h2>📱 참여용 QR 코드</h2>
+        <p class="muted" style="margin-top: 0;">
+          같은 Wi-Fi(네트워크)에 연결된 휴대폰 카메라로 QR을 찍으면 투표 페이지로 바로 들어옵니다.
+        </p>
+        <select id="urlSelect"></select>
+        <div class="inline">
+          <input id="qrUrl" type="url" placeholder="http://192.168.0.10:3000/" />
+          <button id="qrBtn">QR 생성</button>
+        </div>
+        <div id="qrArea" class="hidden">
+          <div id="qrBox"></div>
+          <p class="center muted" id="qrText" style="word-break: break-all;"></p>
+          <div class="btn-row" style="justify-content: center;">
+            <button id="qrFullBtn" class="secondary">크게 보기 (화면 띄우기)</button>
+            <button id="qrDownBtn" class="secondary">PNG 다운로드</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="center">
+        <button id="logoutBtn" class="secondary small">로그아웃</button>
+      </div>
+    </div>
+  </main>
+
+  <div id="qrFull" class="hidden">
+    <h1 id="qrFullTitle"></h1>
+    <div class="big" id="qrFullBox"></div>
+    <p class="muted" id="qrFullUrl"></p>
+    <button id="qrCloseBtn" class="secondary">닫기</button>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voting</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <img src="/favicon.svg" alt="" />
+    <span>Voting</span>
+  </header>
+
+  <main>
+    <div class="card">
+      <h1 id="title">불러오는 중...</h1>
+      <div>
+        <span id="statusBadge" class="badge open">투표 중</span>
+        <span id="liveBadge" class="badge info hidden"><span class="live-dot"></span>실시간</span>
+        <span id="total" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="notice" class="notice hidden"></div>
+      <div id="options"></div>
+      <p id="empty" class="muted center hidden">아직 투표 항목이 없습니다. 관리자가 항목을 추가하면 자동으로 표시됩니다.</p>
+      <div class="btn-row" style="justify-content: space-between; margin-top: 8px;">
+        <span id="myVoteText" class="muted"></span>
+        <button id="cancelBtn" class="secondary small hidden">선택 취소</button>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
