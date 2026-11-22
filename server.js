@@ -361,6 +361,20 @@ const server = http.createServer(async (req, res) => {
         state.templates = state.templates.filter((t) => t.id !== body.id);
         break;
       }
+      case 'template/edit': {
+        if (!state.templates) state.templates = [];
+        const tpl = state.templates.find((t) => t.id === body.id);
+        if (!tpl) return send(res, 400, { error: '해당 템플릿을 찾을 수 없습니다.' });
+        const title = String(body.title || '').trim().slice(0, 100);
+        const opts = Array.isArray(body.options)
+          ? body.options.map((o) => String(o).trim().slice(0, 100)).filter(Boolean)
+          : [];
+        if (!title) return send(res, 400, { error: '투표 주제(제목)를 입력하세요.' });
+        if (opts.length === 0) return send(res, 400, { error: '최소 1개 이상의 항목을 입력하세요.' });
+        tpl.title = title;
+        tpl.options = opts;
+        break;
+      }
       case 'template/apply': {
         const tpl = (state.templates || []).find((t) => t.id === body.id);
         if (!tpl) return send(res, 400, { error: '해당 템플릿을 찾을 수 없습니다.' });

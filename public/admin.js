@@ -131,6 +131,7 @@
           </div>
           <div class="template-actions">
             <button class="small" data-act="apply-tpl" style="background:#7c3aed;">지금 이 투표 시작 ▶</button>
+            <button class="secondary small" data-act="edit-tpl">수정</button>
             <button class="danger small" data-act="del-tpl">삭제</button>
           </div>
         </div>`;
@@ -214,6 +215,18 @@
       if (!confirm(`'${tpl.title}' 템플릿을 삭제할까요?`)) return;
       await api('template/delete', { id });
       toast('삭제했습니다.');
+    } else if (btn.dataset.act === 'edit-tpl') {
+      const newTitle = prompt('투표 주제(제목) 수정', tpl.title);
+      if (!newTitle || !newTitle.trim()) return;
+      const newOptionsRaw = prompt('항목들 수정 (쉼표로 구분)', (tpl.options || []).join(', '));
+      if (!newOptionsRaw || !newOptionsRaw.trim()) return;
+      const options = newOptionsRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (options.length === 0) return toast('최소 1개 이상의 항목을 입력하세요.');
+      await api('template/edit', { id, title: newTitle.trim(), options });
+      toast('템플릿을 수정했습니다!');
     } else if (btn.dataset.act === 'apply-tpl') {
       if (!confirm(`[${tpl.title}] 투표로 즉시 변경할까요?\n(현재 투표 결과는 '지난 투표 기록'에 안전하게 자동 저장됩니다)`)) return;
       await api('template/apply', { id });
