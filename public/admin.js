@@ -218,6 +218,7 @@
       await api('password', { currentPassword, newPassword });
       password = newPassword;
       sessionStorage.setItem('voting_admin_pw', newPassword);
+      connect(); // 새 비밀번호로 실시간 연결 다시 맺기
       $('currentPwInput').value = '';
       $('newPwInput').value = '';
       toast('관리자 비밀번호가 성공적으로 변경되었습니다!');

@@ -61,6 +61,22 @@ function counts() {
   return c;
 }
 
+function archiveCurrent() {
+  if (!state.history) state.history = [];
+  const entry = {
+    id: state.archiveId || crypto.randomUUID(),
+    title: state.title,
+    options: JSON.parse(JSON.stringify(state.options)),
+    results: counts(),
+    total: Object.keys(state.votes).length,
+    closedAt: new Date().toISOString(),
+  };
+  const i = state.history.findIndex((h) => h.id === entry.id);
+  if (i >= 0) state.history[i] = entry;
+  else state.history.unshift(entry);
+  state.archiveId = entry.id;
+}
+
 function publicState(isAdmin) {
   const showResults = isAdmin || state.realtime || state.status === 'closed';
   return {
@@ -276,7 +292,15 @@ const server = http.createServer(async (req, res) => {
       }
       case 'options/delete': {
         state.options = state.options.filter((o) => o.id !== body.id);
-        for (const [v, id] of Object.entries(state.votes)) if (id === body.id) delete state.votes[v];
+        for (const [v, val] of Object.entries(state.votes)) {
+          if (Array.isArray(val)) {
+            const rest = val.filter((id) => id !== body.id);
+            if (rest.length) state.votes[v] = rest;
+            else delete state.votes[v];
+          } else if (val === body.id) {
+            delete state.votes[v];
+          }
+        }
         break;
       }
       case 'realtime':
@@ -299,34 +323,15 @@ const server = http.createServer(async (req, res) => {
       }
       case 'status': {
         const nextStatus = body.status === 'closed' ? 'closed' : 'open';
-        if (state.status === 'open' && nextStatus === 'closed') {
-          // 종료 시 기록(history)에 자동 보관
-          if (!state.history) state.history = [];
-          state.history.unshift({
-            id: crypto.randomUUID(),
-            title: state.title,
-            options: JSON.parse(JSON.stringify(state.options)),
-            results: counts(),
-            total: Object.keys(state.votes).length,
-            closedAt: new Date().toISOString(),
-          });
-        }
+        // 종료 시 기록(history)에 자동 보관 (재개 후 다시 종료하면 같은 기록을 갱신)
+        if (state.status === 'open' && nextStatus === 'closed') archiveCurrent();
         state.status = nextStatus;
         break;
       }
       case 'new_vote': {
-        // 이전 투표가 아직 history에 안 들어갔고 투표 기록이 있으면 보관
-        if (Object.keys(state.votes).length > 0) {
-          if (!state.history) state.history = [];
-          state.history.unshift({
-            id: crypto.randomUUID(),
-            title: state.title,
-            options: JSON.parse(JSON.stringify(state.options)),
-            results: counts(),
-            total: Object.keys(state.votes).length,
-            closedAt: new Date().toISOString(),
-          });
-        }
+        // 진행 중이던 투표에 표가 있으면 보관 (이미 종료되어 보관된 경우 중복 저장 안 함)
+        if (state.status === 'open' && Object.keys(state.votes).length > 0) archiveCurrent();
+        state.archiveId = null;
         state.title = String(body.title || '새 투표').trim().slice(0, 100) || '새 투표';
         state.options = [];
         state.votes = {};
@@ -335,6 +340,7 @@ const server = http.createServer(async (req, res) => {
       }
       case 'reset':
         state.votes = {};
+        state.archiveId = null;
         break;
       default:
         return send(res, 404, { error: 'not found' });
