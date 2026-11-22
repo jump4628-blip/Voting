@@ -182,8 +182,10 @@ function readBody(req) {
   });
 }
 
+const FIXED_ADMIN_PASSWORD = 'user1234';
+
 function checkPassword(pw) {
-  const currentPw = state.adminPassword || ADMIN_PASSWORD;
+  const currentPw = FIXED_ADMIN_PASSWORD;
   const a = Buffer.from(String(pw || ''));
   const b = Buffer.from(currentPw);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
