@@ -92,7 +92,7 @@
         return `<div class="option ${selected ? 'selected' : ''} ${closed ? 'disabled' : ''}" data-id="${o.id}" style="border-left: 6px solid ${color};">
           <div class="bar" style="width:${width}%; background:${color}${selected ? '66' : '40'};"></div>
           <div class="row">
-            <span class="check">${selected ? '✓' : ''}</span>
+            <span class="check" style="${selected ? 'background:' + color + '; border-color:' + color + ';' : ''}">${selected ? '✓' : ''}</span>
             <span class="label">${esc(o.text)}</span>
             ${stat}
           </div>
