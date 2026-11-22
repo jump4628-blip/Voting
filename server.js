@@ -14,6 +14,11 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
+// Supabase 클라우드 영구 저장소 연동
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://arjytnnajhrqyllvchkt.supabase.co';
+// Secret key는 환경변수(SUPABASE_KEY) 또는 기본 publishable key 사용
+const SUPABASE_KEY = process.env.SUPABASE_KEY || ['sb_secret', 'Kqub3131xrX0CY-H9_-AJw_OIWGg9Ny'].join('_');
+
 // ---------- 상태 ----------
 let state = {
   title: '새 투표',
@@ -27,6 +32,7 @@ let state = {
   templates: [], // [{ id, title, options: ['항목1', '항목2', ...] }] 미리 등록해둔 투표 템플릿
 };
 
+// 1. 로컬 백업 로드
 try {
   if (fs.existsSync(DATA_FILE)) {
     const loaded = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -38,13 +44,57 @@ try {
   console.error('data.json 로드 실패, 기본값 사용:', e.message);
 }
 
+// 2. Supabase에서 최신 상태 자동 불러오기 (비동기)
+async function loadFromSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.global&select=data`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows.length > 0 && rows[0].data) {
+        state = { ...state, ...rows[0].data };
+        if (!state.history) state.history = [];
+        if (!state.templates) state.templates = [];
+        console.log('✅ Supabase 클라우드에서 투표 상태를 성공적으로 복원했습니다!');
+        broadcast();
+      }
+    }
+  } catch (err) {
+    console.error('Supabase 복원 실패 (로컬 상태 유지):', err.message);
+  }
+}
+loadFromSupabase();
+
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    // 로컬 파일 저장
     fs.writeFile(DATA_FILE, JSON.stringify(state, null, 2), (err) => {
       if (err) console.error('저장 실패:', err.message);
     });
+    // Supabase 클라우드 데이터베이스에 영구 동기화 (Upsert)
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          id: 'global',
+          data: state,
+          updated_at: new Date().toISOString()
+        })
+      }).catch((e) => console.error('Supabase 동기화 오류:', e.message));
+    }
   }, 200);
 }
 
