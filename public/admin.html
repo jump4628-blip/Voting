@@ -116,7 +116,10 @@
 
       <!-- 이전 투표 결과 기록 -->
       <div class="card">
-        <h2>📜 지난 투표 기록</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h2 style="margin: 0;">📜 지난 투표 기록</h2>
+          <button id="clearHistoryBtn" class="danger small hidden">전체 기록 삭제</button>
+        </div>
         <div id="historyList"></div>
         <p id="noHistory" class="muted center">종료된 지난 투표 기록이 없습니다.</p>
       </div>

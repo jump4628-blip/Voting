@@ -142,6 +142,7 @@
   function renderHistory() {
     const list = state.history || [];
     $('noHistory').classList.toggle('hidden', list.length > 0);
+    $('clearHistoryBtn').classList.toggle('hidden', list.length === 0);
     $('historyList').innerHTML = list
       .map((h) => {
         const dateStr = h.closedAt ? new Date(h.closedAt).toLocaleString('ko-KR') : '';
@@ -155,9 +156,14 @@
             </div>`;
           })
           .join('');
-        return `<div class="history-item">
-          <div class="history-title">📌 ${esc(h.title)}</div>
-          <div class="history-meta">종료 일시: ${dateStr} · 총 참여자: ${h.total || 0}명</div>
+        return `<div class="history-item" data-id="${h.id}">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div>
+              <div class="history-title">📌 ${esc(h.title)}</div>
+              <div class="history-meta">종료 일시: ${dateStr} · 총 참여자: ${h.total || 0}명</div>
+            </div>
+            <button class="danger small" data-act="del-history" style="flex-shrink: 0; padding: 4px 8px; font-size: 0.8rem;">삭제</button>
+          </div>
           <div>${rows || '<span class="muted">항목 없음</span>'}</div>
         </div>`;
       })
@@ -232,6 +238,24 @@
       await api('template/apply', { id });
       toast(`[${tpl.title}] 투표로 즉시 전환되었습니다!`);
     }
+  });
+
+  $('historyList').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.dataset.act !== 'del-history') return;
+    const item = btn.closest('.history-item');
+    const id = item.dataset.id;
+    const h = (state.history || []).find((x) => x.id === id);
+    const title = h ? h.title : '해당';
+    if (!confirm(`'${title}' 기록을 정말 삭제할까요?`)) return;
+    await api('history/delete', { id });
+    toast('기록을 삭제했습니다.');
+  });
+
+  $('clearHistoryBtn').addEventListener('click', async () => {
+    if (!confirm('종료된 모든 지난 투표 기록을 영구 삭제할까요?\n(되돌릴 수 없습니다)')) return;
+    await api('history/clear', {});
+    toast('모든 기록을 삭제했습니다.');
   });
 
   $('addForm').addEventListener('submit', async (e) => {

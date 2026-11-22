@@ -437,6 +437,15 @@ const server = http.createServer(async (req, res) => {
         state.status = 'open';
         break;
       }
+      case 'history/delete': {
+        if (!state.history) state.history = [];
+        state.history = state.history.filter((h) => h.id !== body.id);
+        break;
+      }
+      case 'history/clear': {
+        state.history = [];
+        break;
+      }
       case 'reset':
         state.votes = {};
         state.archiveId = null;
