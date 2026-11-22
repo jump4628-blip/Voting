@@ -24,6 +24,7 @@ let state = {
   status: 'open', // 'open' | 'closed'
   history: [], // [{ id, title, options, results, total, closedAt }]
   adminPassword: '', // 관리자가 직접 변경한 비밀번호 (있으면 우선 적용)
+  templates: [], // [{ id, title, options: ['항목1', '항목2', ...] }] 미리 등록해둔 투표 템플릿
 };
 
 try {
@@ -31,6 +32,7 @@ try {
     const loaded = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
     state = { ...state, ...loaded };
     if (!state.history) state.history = [];
+    if (!state.templates) state.templates = [];
   }
 } catch (e) {
   console.error('data.json 로드 실패, 기본값 사용:', e.message);
@@ -90,6 +92,7 @@ function publicState(isAdmin) {
     total: showResults ? Object.keys(state.votes).length : null,
     participants: isAdmin ? Object.keys(state.votes).length : undefined,
     history: isAdmin ? (state.history || []) : undefined,
+    templates: isAdmin ? (state.templates || []) : undefined,
   };
 }
 
@@ -334,6 +337,38 @@ const server = http.createServer(async (req, res) => {
         state.archiveId = null;
         state.title = String(body.title || '새 투표').trim().slice(0, 100) || '새 투표';
         state.options = [];
+        state.votes = {};
+        state.status = 'open';
+        break;
+      }
+      case 'template/add': {
+        const title = String(body.title || '').trim().slice(0, 100);
+        const opts = Array.isArray(body.options)
+          ? body.options.map((o) => String(o).trim().slice(0, 100)).filter(Boolean)
+          : [];
+        if (!title) return send(res, 400, { error: '투표 주제(제목)를 입력하세요.' });
+        if (opts.length === 0) return send(res, 400, { error: '최소 1개 이상의 항목을 입력하세요.' });
+        if (!state.templates) state.templates = [];
+        state.templates.push({
+          id: crypto.randomUUID(),
+          title,
+          options: opts,
+        });
+        break;
+      }
+      case 'template/delete': {
+        if (!state.templates) state.templates = [];
+        state.templates = state.templates.filter((t) => t.id !== body.id);
+        break;
+      }
+      case 'template/apply': {
+        const tpl = (state.templates || []).find((t) => t.id === body.id);
+        if (!tpl) return send(res, 400, { error: '해당 템플릿을 찾을 수 없습니다.' });
+        // 진행 중이던 투표에 표가 있으면 자동 보관
+        if (state.status === 'open' && Object.keys(state.votes).length > 0) archiveCurrent();
+        state.archiveId = null;
+        state.title = tpl.title;
+        state.options = tpl.options.map((txt) => ({ id: crypto.randomUUID(), text: txt }));
         state.votes = {};
         state.status = 'open';
         break;

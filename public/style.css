@@ -275,6 +275,46 @@ select {
   border-bottom: none;
 }
 
+/* 템플릿 카드 */
+.template-item {
+  border: 1px solid #d8b4fe;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.template-info {
+  flex: 1;
+}
+.template-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #4c1d95;
+  margin-bottom: 4px;
+}
+.template-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.template-tag {
+  background: #f3e8ff;
+  color: #6b21a8;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.template-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 /* 대형 화면용 QR (발표 화면) */
 #qrFull {
   position: fixed; inset: 0; background: #fff; z-index: 200;
