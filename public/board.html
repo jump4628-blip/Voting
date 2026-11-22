@@ -222,6 +222,18 @@
   </div>
 
   <script>
+    // 관리자 로그인 토큰 확인 (관리자 페이지에 로그인한 적이 없으면 차단)
+    const adminPw = sessionStorage.getItem('voting_admin_pw');
+    if (!adminPw) {
+      document.body.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:80vh; text-align:center;">
+          <h2 style="font-size:2rem; margin-bottom:12px; color:#ef4444;">🔒 관리자 전용 화면입니다</h2>
+          <p style="color:#94a3b8; font-size:1.1rem; margin-bottom:24px;">전광판 화면은 관리자 로그인이 필요합니다.</p>
+          <a href="/admin" style="background:#4f46e5; color:#fff; padding:12px 24px; border-radius:10px; text-decoration:none; font-weight:700;">관리자 로그인하러 가기</a>
+        </div>
+      `;
+    }
+
     const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#0ea5e9', '#e11d48'];
     let current = null;
 
@@ -327,7 +339,7 @@
       });
 
     // 실시간 SSE 스트림 수신
-    const es = new EventSource('/api/events');
+    const es = new EventSource('/api/events' + (adminPw ? '?pw=' + encodeURIComponent(adminPw) : ''));
     es.onmessage = (e) => {
       try {
         current = JSON.parse(e.data);
