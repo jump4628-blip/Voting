@@ -12,6 +12,18 @@
   let myVote = null;
   let busy = false;
   let chartMode = 'bar'; // 'bar' | 'pie'
+  const COLORS = [
+    '#4f46e5', // 인디고
+    '#059669', // 에메랄드 그린
+    '#d97706', // 앰버 오렌지
+    '#dc2626', // 레드
+    '#0284c7', // 스카이블루
+    '#7c3aed', // 바이올렛
+    '#db2777', // 핑크
+    '#0d9488', // 틸
+    '#ea580c', // 딥 오렌지
+    '#475569'  // 슬레이트
+  ];
   // 서로 확실히 구분되는 색상
   const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#0ea5e9', '#e11d48'];
 
@@ -39,6 +51,8 @@
     $('liveBadge').classList.toggle('hidden', !(s.realtime && !closed));
     $('total').textContent = s.showResults ? `총 ${s.total}명 참여` : '';
 
+    // 내 투표가 삭제된 항목이면 초기화
+    if (myVote && !s.options.some((o) => o.id === myVote)) myVote = null;
     // 내 투표 중 삭제된 항목은 제거
     if (Array.isArray(myVote)) {
       myVote = myVote.filter((id) => s.options.some((o) => o.id === id));
@@ -85,25 +99,29 @@
         if (s.showResults) {
           const c = s.results[o.id] || 0;
           const pct = total ? Math.round((c / total) * 100) : 0;
+          // 1표라도 있으면 최소 8% 너비를 확보하여 확실하게 막대 색상이 보이도록 함
+          width = c > 0 ? Math.max(pct, 8) : 0;
           width = c > 0 ? Math.max(pct, 4) : 0; // 1표라도 보이도록 최소 너비
           const crown = closed && c > 0 && c === max ? '🏆 ' : '';
           stat = `<span class="stat">${crown}${c}표 <small>(${pct}%)</small></span>`;
         }
-        return `<div class="option ${selected ? 'selected' : ''} ${closed ? 'disabled' : ''}" data-id="${o.id}" style="border-left: 6px solid ${color};">
+        return `<div class="option ${selected ? 'selected' : ''} ${closed ? 'disabled' : ''}" data-id="${o.id}">
+          <div class="bar" style="width:${width}%; background:${color}; opacity: ${selected ? '0.35' : '0.22'};"></div>
+        return `< div class="option ${selected ? 'selected' : ''} ${closed ? 'disabled' : ''}" data - id="${o.id}" style = "border-left: 6px solid ${color};" >
           <div class="bar" style="width:${width}%; background:${color}${selected ? '66' : '40'};"></div>
           <div class="row">
             <span class="check" style="${selected ? 'background:' + color + '; border-color:' + color + ';' : ''}">${selected ? '✓' : ''}</span>
             <span class="label">${esc(o.text)}</span>
             ${stat}
           </div>
-        </div>`;
+        </div > `;
       })
       .join('');
 
     let voteDesc = '';
     if (selectedIds.length > 0) {
       const names = s.options.filter((o) => selectedIds.includes(o.id)).map((o) => o.text);
-      voteDesc = `내 선택: ${names.join(', ')}`;
+      voteDesc = `내 선택: ${ names.join(', ') } `;
     } else {
       voteDesc = closed ? '' : (s.allowMultiple ? '항목을 눌러 다중 선택하세요 (다시 누르면 취소)' : '항목을 눌러 투표하세요');
     }
@@ -122,9 +140,11 @@
       });
       const d = await r.json();
       if (!r.ok) return toast(d.error || '오류가 발생했습니다.');
+      const changed = myVote && optionId && myVote !== optionId;
       const prev = Array.isArray(myVote) ? myVote : myVote ? [myVote] : [];
       myVote = d.myVote;
       render();
+      toast(optionId ? (changed ? '투표를 변경했어요!' : '투표 완료!') : '선택을 취소했어요.');
       const now = Array.isArray(myVote) ? myVote : myVote ? [myVote] : [];
       let msg;
       if (!optionId) msg = '선택을 취소했어요.';
@@ -139,6 +159,7 @@
   }
 
   function renderPie(s, total) {
+    if (total === 0) {
     // 원형 그래프는 전체 표 수 기준 (복수 투표에서도 360도를 넘지 않도록)
     const sum = s.options.reduce((a, o) => a + (s.results[o.id] || 0), 0);
     if (sum === 0) {
@@ -159,26 +180,34 @@
     let currentDeg = 0;
     const gradients = [];
     const legends = [];
+
     s.options.forEach((o, idx) => {
       const c = s.results[o.id] || 0;
+      const pct = (c / total) * 100;
+      const deg = (c / total) * 360;
       const color = COLORS[idx % COLORS.length];
       const deg = raw[idx] * scale;
       if (deg > 0) {
-        gradients.push(`${color} ${currentDeg}deg ${currentDeg + deg - GAP}deg`);
-        if (GAP) gradients.push(`#fff ${currentDeg + deg - GAP}deg ${currentDeg + deg}deg`);
+        gradients.push(`${ color } ${ currentDeg }deg ${ currentDeg + deg } deg`);
+        gradients.push(`${ color } ${ currentDeg }deg ${ currentDeg + deg - GAP } deg`);
+        if (GAP) gradients.push(`#fff ${ currentDeg + deg - GAP }deg ${ currentDeg + deg } deg`);
         currentDeg += deg;
       }
       const pct = total ? Math.round((c / total) * 100) : 0;
       legends.push(`
-        <div class="legend-item">
+          < div class="legend-item" >
           <span class="legend-color" style="background:${color}"></span>
           <span class="legend-text">${esc(o.text)}</span>
+          <span class="legend-pct">${c}표 (${Math.round(pct)}%)</span>
           <span class="legend-pct">${c}표 (${pct}%)</span>
-        </div>
-      `);
+        </div >
+          `);
     });
 
-    $('pieChart').style.background = `conic-gradient(${gradients.join(', ')})`;
+    $('pieChart').style.background = gradients.length > 0
+      ? `conic - gradient(${ gradients.join(', ') })`
+      : '#e5e7eb';
+    $('pieChart').style.background = `conic - gradient(${ gradients.join(', ') })`;
     $('pieLegend').innerHTML = legends.join('');
   }
 

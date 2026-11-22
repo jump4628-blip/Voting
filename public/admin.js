@@ -49,6 +49,7 @@
       return;
     }
     sessionStorage.setItem('voting_admin_pw', pw);
+    localStorage.setItem('voting_admin_pw', pw);
     $('loginCard').classList.add('hidden');
     $('panel').classList.remove('hidden');
     $('loginErr').textContent = '';
@@ -68,6 +69,7 @@
   function logout() {
     password = '';
     sessionStorage.removeItem('voting_admin_pw');
+    localStorage.removeItem('voting_admin_pw');
     if (es) es.close();
     $('panel').classList.add('hidden');
     $('loginCard').classList.remove('hidden');

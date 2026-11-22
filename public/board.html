@@ -222,16 +222,45 @@
   </div>
 
   <script>
-    // 관리자 로그인 토큰 확인 (관리자 페이지에 로그인한 적이 없으면 차단)
-    const adminPw = sessionStorage.getItem('voting_admin_pw');
+    // 관리자 로그인 토큰 확인 (localStorage와 sessionStorage 둘 다 확인)
+    let adminPw = localStorage.getItem('voting_admin_pw') || sessionStorage.getItem('voting_admin_pw');
+    
+    // 로그인이 안 되어 있다면 전광판 화면 자체에서 비밀번호를 입력할 수 있는 깔끔한 로그인 폼 표시
     if (!adminPw) {
       document.body.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:80vh; text-align:center;">
-          <h2 style="font-size:2rem; margin-bottom:12px; color:#ef4444;">🔒 관리자 전용 화면입니다</h2>
-          <p style="color:#94a3b8; font-size:1.1rem; margin-bottom:24px;">전광판 화면은 관리자 로그인이 필요합니다.</p>
-          <a href="/admin" style="background:#4f46e5; color:#fff; padding:12px 24px; border-radius:10px; text-decoration:none; font-weight:700;">관리자 로그인하러 가기</a>
+          <div style="background:#1e293b; padding:32px 28px; border-radius:18px; border:1px solid #334155; max-width:380px; width:100%; box-shadow:0 8px 30px rgba(0,0,0,0.4);">
+            <div style="font-size:2.5rem; margin-bottom:12px;">🖥️</div>
+            <h2 style="font-size:1.6rem; margin-bottom:8px; color:#fff;">전광판 모드</h2>
+            <p style="color:#94a3b8; font-size:0.95rem; margin-bottom:20px;">관리자 비밀번호를 입력하세요.</p>
+            <form id="boardLoginForm" style="display:flex; flex-direction:column; gap:10px;">
+              <input id="boardPwInput" type="password" placeholder="비밀번호" style="width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid #475569; background:#0f172a; color:#fff; font-size:1rem; outline:none;" required />
+              <button type="submit" style="background:#4f46e5; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;">전광판 시작하기</button>
+            </form>
+            <p id="boardLoginErr" style="color:#ef4444; font-size:0.9rem; margin-top:12px;"></p>
+          </div>
         </div>
       `;
+      document.getElementById('boardLoginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pw = document.getElementById('boardPwInput').value.trim();
+        try {
+          const r = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': pw }
+          });
+          if (r.ok) {
+            localStorage.setItem('voting_admin_pw', pw);
+            sessionStorage.setItem('voting_admin_pw', pw);
+            window.location.reload();
+          } else {
+            document.getElementById('boardLoginErr').innerText = '비밀번호가 올바르지 않습니다.';
+          }
+        } catch {
+          document.getElementById('boardLoginErr').innerText = '로그인 중 오류가 발생했습니다.';
+        }
+      });
+      throw new Error('AUTH_REQUIRED');
     }
 
     const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#0ea5e9', '#e11d48'];
