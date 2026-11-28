@@ -15,9 +15,11 @@ const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Supabase 클라우드 영구 저장소 연동
+// ⚠️ 키는 코드에 절대 넣지 말고 Render 환경변수(SUPABASE_KEY)로만 설정 (공개 저장소에 노출되면 키가 폐기됨)
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://arjytnnajhrqyllvchkt.supabase.co';
-// Secret key는 환경변수(SUPABASE_KEY) 또는 기본 publishable key 사용
-const SUPABASE_KEY = process.env.SUPABASE_KEY || ['sb_secret', 'Kqub3131xrX0CY-H9_-AJw_OIWGg9Ny'].join('_');
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+// Supabase에서 기존 데이터를 무사히 불러온 뒤에만 덮어쓰기 허용 (기존 투표가 빈 값으로 덮이는 사고 방지)
+let supabaseReady = false;
 
 // ---------- 상태 ----------
 let state = {
@@ -44,9 +46,12 @@ try {
   console.error('data.json 로드 실패, 기본값 사용:', e.message);
 }
 
-// 2. Supabase에서 최신 상태 자동 불러오기 (비동기)
+// 2. Supabase에서 최신 상태 자동 불러오기 (실패하면 10초마다 재시도)
 async function loadFromSupabase() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.warn('⚠️ SUPABASE_KEY 환경변수가 없어 클라우드 저장이 꺼져 있습니다.');
+    return;
+  }
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.global&select=data`, {
       headers: {
@@ -54,18 +59,21 @@ async function loadFromSupabase() {
         'Authorization': `Bearer ${SUPABASE_KEY}`
       }
     });
-    if (res.ok) {
-      const rows = await res.json();
-      if (rows && rows.length > 0 && rows[0].data) {
-        state = { ...state, ...rows[0].data };
-        if (!state.history) state.history = [];
-        if (!state.templates) state.templates = [];
-        console.log('✅ Supabase 클라우드에서 투표 상태를 성공적으로 복원했습니다!');
-        broadcast();
-      }
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${await res.text()}`);
+    const rows = await res.json();
+    if (rows && rows.length > 0 && rows[0].data) {
+      state = { ...state, ...rows[0].data };
+      if (!state.history) state.history = [];
+      if (!state.templates) state.templates = [];
+      console.log('✅ Supabase 클라우드에서 투표 상태를 성공적으로 복원했습니다!');
+      broadcast();
+    } else {
+      console.log('ℹ️ Supabase에 저장된 데이터가 없어 새로 시작합니다.');
     }
+    supabaseReady = true;
   } catch (err) {
-    console.error('Supabase 복원 실패 (로컬 상태 유지):', err.message);
+    console.error('❌ Supabase 복원 실패 (10초 뒤 재시도, 그동안 클라우드 덮어쓰기 안 함):', err.message);
+    setTimeout(loadFromSupabase, 10000);
   }
 }
 loadFromSupabase();
@@ -78,8 +86,8 @@ function save() {
     fs.writeFile(DATA_FILE, JSON.stringify(state, null, 2), (err) => {
       if (err) console.error('저장 실패:', err.message);
     });
-    // Supabase 클라우드 데이터베이스에 영구 동기화 (Upsert)
-    if (SUPABASE_URL && SUPABASE_KEY) {
+    // Supabase 클라우드 데이터베이스에 영구 동기화 (Upsert) - 기존 데이터를 불러온 뒤에만
+    if (SUPABASE_URL && SUPABASE_KEY && supabaseReady) {
       fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
         method: 'POST',
         headers: {
@@ -93,7 +101,11 @@ function save() {
           data: state,
           updated_at: new Date().toISOString()
         })
-      }).catch((e) => console.error('Supabase 동기화 오류:', e.message));
+      })
+        .then(async (r) => {
+          if (!r.ok) console.error(`❌ Supabase 저장 실패: HTTP ${r.status} ${await r.text()}`);
+        })
+        .catch((e) => console.error('Supabase 동기화 오류:', e.message));
     }
   }, 200);
 }
