@@ -15,9 +15,8 @@ const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Supabase 클라우드 영구 저장소 연동
-// ⚠️ 키는 코드에 절대 넣지 말고 Render 환경변수(SUPABASE_KEY)로만 설정 (공개 저장소에 노출되면 키가 폐기됨)
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://arjytnnajhrqyllvchkt.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_focpoV8Wymqw2nRe-jqv1Q_P7C-h-k0';
 // Supabase에서 기존 데이터를 무사히 불러온 뒤에만 덮어쓰기 허용 (기존 투표가 빈 값으로 덮이는 사고 방지)
 let supabaseReady = false;
 
